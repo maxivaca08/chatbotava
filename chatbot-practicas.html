@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chatbot — Prácticas de la Enseñanza</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f0e8;
+    --surface: #ffffff;
+    --accent: #3d6b4f;
+    --accent-light: #e8f0eb;
+    --accent2: #c97d3a;
+    --text: #1a1a1a;
+    --muted: #7a7a6e;
+    --border: #ddd8cc;
+    --bubble-user: #3d6b4f;
+    --bubble-bot: #ffffff;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, rgba(61,107,79,0.07) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, rgba(201,125,58,0.07) 0%, transparent 50%);
+  }
+
+  .wrapper {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  header p {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    background: #4caf7d;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .chat-box {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    height: 420px;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .msg {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    animation: fadeUp 0.25s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg.user { flex-direction: row-reverse; }
+
+  .bubble {
+    max-width: 80%;
+    padding: 11px 15px;
+    border-radius: 18px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .msg.bot .bubble {
+    background: var(--accent-light);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+    border: 1px solid rgba(61,107,79,0.15);
+  }
+
+  .msg.user .bubble {
+    background: var(--bubble-user);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .msg-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .msg.bot .msg-icon { background: var(--accent); }
+  .msg.user .msg-icon { background: var(--accent2); }
+
+  .suggestions {
+    padding: 0 20px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .chip {
+    background: var(--accent-light);
+    border: 1px solid rgba(61,107,79,0.25);
+    color: var(--accent);
+    border-radius: 20px;
+    padding: 6px 13px;
+    font-size: 0.78rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+
+  .chip:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    background: #fafaf8;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  button.send {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    width: 42px; height: 42px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    transition: background 0.2s, transform 0.15s;
+    flex-shrink: 0;
+  }
+
+  button.send:hover { background: #2f5440; transform: scale(1.05); }
+  button.send:active { transform: scale(0.97); }
+
+  .typing {
+    display: flex; gap: 4px; align-items: center; padding: 4px 2px;
+  }
+  .typing span {
+    width: 7px; height: 7px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.1s infinite;
+    opacity: 0.6;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.18s; }
+  .typing span:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+  <header>
+    <div class="avatar">📚</div>
+    <div>
+      <h1>Asistente de Prácticas de la Enseñanza</h1>
+      <p><span class="status-dot"></span>En línea · Listo para ayudarte</p>
+    </div>
+  </header>
+
+  <div class="chat-box">
+    <div class="messages" id="messages"></div>
+    <div class="suggestions" id="suggestions"></div>
+    <div class="input-row">
+      <input type="text" id="input" placeholder="Escribí tu pregunta..." autocomplete="off" />
+      <button class="send" onclick="sendMessage()" title="Enviar">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const knowledge = [
+  {
+    keys: ["qué es", "de qué trata", "materia", "asignatura", "practicas de la enseñanza", "prácticas de la enseñanza"],
+    answer: "Prácticas de la Enseñanza es una asignatura del profesorado que articula la formación teórica con la experiencia en el aula real. Busca que los futuros docentes desarrollen competencias para planificar, enseñar, observar y reflexionar sobre su propia práctica pedagógica."
+  },
+  {
+    keys: ["planificación", "planificacion", "planificar", "plan de clase", "secuencia didáctica", "secuencia didactica"],
+    answer: "La planificación didáctica es el proceso de anticipar y organizar la enseñanza. Incluye definir objetivos o propósitos, seleccionar contenidos, elegir estrategias metodológicas, diseñar actividades y establecer criterios de evaluación. Una buena planificación es flexible: permite ajustes según las necesidades del grupo."
+  },
+  {
+    keys: ["observación", "observacion", "observar clases", "registro de observación", "diario de campo"],
+    answer: "La observación de clases es una herramienta clave en las prácticas. Permite analizar las dinámicas del aula, las estrategias del docente y las respuestas de los estudiantes. Se registra en un diario de campo, prestando atención al clima áulico, la gestión del tiempo, la comunicación y los vínculos pedagógicos."
+  },
+  {
+    keys: ["residencia", "práctica docente", "practica docente", "dar clases", "estar al frente"],
+    answer: "La residencia es la etapa en que el futuro docente toma a su cargo un grupo de estudiantes reales, diseñando y ejecutando sus propias clases bajo supervisión. Es el momento más desafiante y enriquecedor de la formación, ya que pone en juego todo lo aprendido en un contexto auténtico."
+  },
+  {
+    keys: ["reflexión", "reflexion", "práctica reflexiva", "practica reflexiva", "análisis", "analisis"],
+    answer: "La reflexión sobre la práctica es fundamental en esta asignatura. Implica analizar críticamente lo que ocurrió en el aula: qué funcionó, qué no, por qué, y cómo mejorar. Se apoya en la escritura de memorias, registros y análisis de clases propias y ajenas, vinculando teoría y práctica."
+  },
+  {
+    keys: ["evaluación", "evaluacion", "evaluar", "instrumentos de evaluación"],
+    answer: "La evaluación en prácticas tiene dos dimensiones: la evaluación de los estudiantes en el aula (diagnóstica, formativa y sumativa) y la evaluación de la propia práctica docente. Se busca que el practicante diseñe instrumentos coherentes con los objetivos de aprendizaje y que pueda fundamentar sus criterios."
+  },
+  {
+    keys: ["rol docente", "rol del docente", "ser docente", "identidad docente", "docente"],
+    answer: "El rol docente implica mucho más que transmitir contenidos: supone construir vínculos, gestionar el aula, tomar decisiones pedagógicas en tiempo real y comprometerse con el aprendizaje de todos los estudiantes. Las prácticas ayudan a construir y reflexionar sobre la propia identidad docente."
+  },
+  {
+    keys: ["tutor", "tutora", "profesor tutor", "acompañamiento", "supervisión", "supervision"],
+    answer: "Durante las prácticas hay dos figuras de acompañamiento: el docente co-formador (el profesor del aula donde se practica) y el profesor de Prácticas de la Enseñanza de tu institución. Ambos orientan, observan y retroalimentan el desempeño del estudiante-practicante."
+  },
+  {
+    keys: ["estrategias", "estrategias didácticas", "estrategias didacticas", "metodología", "metodologia"],
+    answer: "Las estrategias didácticas son los procedimientos y recursos que el docente utiliza para facilitar el aprendizaje: exposición dialogada, trabajo en grupos, aprendizaje basado en problemas, proyectos, juego didáctico, entre otras. La elección depende del contenido, los objetivos y las características del grupo."
+  },
+  {
+    keys: ["curriculum", "currículo", "curriculo", "contenidos", "diseño curricular"],
+    answer: "El currículo es el conjunto de contenidos, objetivos y lineamientos que orientan la enseñanza en cada nivel y modalidad. En las prácticas, el futuro docente aprende a leer e interpretar los diseños curriculares jurisdiccionales para planificar en coherencia con ellos."
+  },
+  {
+    keys: ["hola", "buenas", "buenos días", "buenas tardes", "buenas noches", "hey"],
+    answer: "¡Hola! 👋 Soy el asistente de Prácticas de la Enseñanza. Podés preguntarme sobre planificación, observación, residencia, evaluación, reflexión docente y mucho más. ¿En qué puedo ayudarte?"
+  },
+  {
+    keys: ["gracias", "muchas gracias", "genial", "perfecto", "ok"],
+    answer: "¡De nada! Si tenés más preguntas sobre Prácticas de la Enseñanza, acá estoy. 😊"
+  }
+];
+
+const suggestions = [
+  "¿Qué es la planificación didáctica?",
+  "¿En qué consiste la residencia?",
+  "¿Cómo se hace la observación de clases?",
+  "¿Qué es la reflexión sobre la práctica?",
+  "¿Cuál es el rol del tutor?"
+];
+
+function getAnswer(text) {
+  const lower = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const item of knowledge) {
+    if (item.keys.some(k => lower.includes(k.normalize("NFD").replace(/[\u0300-\u036f]/g, "")))) {
+      return item.answer;
+    }
+  }
+  return "No tengo información específica sobre eso, pero podés preguntarme sobre planificación, observación de clases, residencia, evaluación, reflexión docente, estrategias didácticas o el rol del tutor. 📚";
+}
+
+function addMessage(text, who) {
+  const box = document.getElementById("messages");
+  const msg = document.createElement("div");
+  msg.className = `msg ${who}`;
+  const icon = document.createElement("div");
+  icon.className = "msg-icon";
+  icon.textContent = who === "bot" ? "📚" : "🙋";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+  msg.appendChild(icon);
+  msg.appendChild(bubble);
+  box.appendChild(msg);
+  box.scrollTop = box.scrollHeight;
+}
+
+function showTyping() {
+  const box = document.getElementById("messages");
+  const msg = document.createElement("div");
+  msg.className = "msg bot";
+  msg.id = "typing-indicator";
+  const icon = document.createElement("div");
+  icon.className = "msg-icon";
+  icon.textContent = "📚";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  msg.appendChild(icon);
+  msg.appendChild(bubble);
+  box.appendChild(msg);
+  box.scrollTop = box.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById("typing-indicator");
+  if (t) t.remove();
+}
+
+function sendMessage(text) {
+  const input = document.getElementById("input");
+  const userText = text || input.value.trim();
+  if (!userText) return;
+  input.value = "";
+  document.getElementById("suggestions").style.display = "none";
+  addMessage(userText, "user");
+  showTyping();
+  setTimeout(() => {
+    removeTyping();
+    addMessage(getAnswer(userText), "bot");
+  }, 700 + Math.random() * 400);
+}
+
+// Render suggestion chips
+const sugBox = document.getElementById("suggestions");
+suggestions.forEach(s => {
+  const chip = document.createElement("button");
+  chip.className = "chip";
+  chip.textContent = s;
+  chip.onclick = () => sendMessage(s);
+  sugBox.appendChild(chip);
+});
+
+// Enter key
+document.getElementById("input").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendMessage();
+});
+
+// Welcome message
+setTimeout(() => {
+  addMessage("¡Hola! 👋 Soy tu asistente para Prácticas de la Enseñanza. Podés hacer clic en una sugerencia o escribir tu pregunta directamente.", "bot");
+}, 300);
+</script>
+</body>
+</html>
